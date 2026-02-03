@@ -21,12 +21,12 @@ from rest_framework.routers import DefaultRouter
 from student_DBMS.views import StudentViewSet, AcademicRecordViewSet, dashboard_stats
 
 router = DefaultRouter()
-router.register(r'students', StudentViewSet, basename='student')
-router.register(r'academic-records', AcademicRecordViewSet, basename='academic-record')
+router.register('students', StudentViewSet, basename='student')
+router.register('academic-records', AcademicRecordViewSet, basename='academic-record')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include(router.urls)),
+    path('api/', include(router.urls)),
     path('api/dashboard/stats/', dashboard_stats, name='dashboard-stats'),
     path('api-auth/', include('rest_framework.urls')),
 ]

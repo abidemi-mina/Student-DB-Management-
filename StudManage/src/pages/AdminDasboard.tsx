@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Section } from "../components/Section";
 import { studentAPI, formatDisplayDate } from "../services/api";
-import type { Student, DashboardStats } from "../services/api";
+import type { Student, DashboardStats, AcademicRecord } from "../services/api";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -11,6 +11,11 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterGender, setFilterGender] = useState("");
+  const [selectedStudentRecords, setSelectedStudentRecords] = useState<{
+    student: Student;
+    records: AcademicRecord[];
+  } | null>(null);
+  const [loadingRecords, setLoadingRecords] = useState(false);
 
   const isAdmin = localStorage.getItem("adminLoggedIn") === "yes";
 
@@ -21,7 +26,6 @@ export default function AdminDashboard() {
       if (search) params.search = search;
       if (filterGender) params.gender = filterGender;
       
-      // ✅ Get data directly - no .data needed
       const studentsData = await studentAPI.getStudents(params);
       setStudents(studentsData);
     } catch (error) {
@@ -33,7 +37,6 @@ export default function AdminDashboard() {
 
   const fetchDashboardStats = useCallback(async () => {
     try {
-      // ✅ Get data directly - no .data needed
       const statsData = await studentAPI.getDashboardStats();
       setStats(statsData);
     } catch (error) {
@@ -49,16 +52,28 @@ export default function AdminDashboard() {
   }, [isAdmin, fetchStudents, fetchDashboardStats]);
 
   const handleDeleteStudent = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this student?")) {
+    if (window.confirm("Are you sure you want to delete this student? This will also delete all their academic records.")) {
       try {
         await studentAPI.deleteStudent(id);
         setStudents(students.filter(student => student.id !== id));
-        // Refresh stats
         fetchDashboardStats();
       } catch (error) {
         console.error("Error deleting student:", error);
         alert("Failed to delete student.");
       }
+    }
+  };
+
+  const handleViewRecords = async (student: Student) => {
+    setLoadingRecords(true);
+    try {
+      const records = await studentAPI.getStudentAcademicRecords(student.id);
+      setSelectedStudentRecords({ student, records });
+    } catch (error) {
+      console.error("Error fetching academic records:", error);
+      alert("Failed to load academic records.");
+    } finally {
+      setLoadingRecords(false);
     }
   };
 
@@ -85,7 +100,6 @@ export default function AdminDashboard() {
               const email = formData.get("email") as string;
               const password = formData.get("password") as string;
               
-              // Simple admin check
               if (email === "admin@example.com" && password === "admin123") {
                 localStorage.setItem("adminLoggedIn", "yes");
                 localStorage.setItem("adminEmail", email);
@@ -145,7 +159,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // Main dashboard (rest remains the same)
+  // Main dashboard
   return (
     <div className="min-h-screen bg-zinc-100 p-4 md:p-6">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -164,6 +178,15 @@ export default function AdminDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Add Student
+            </button>
+            <button
+              onClick={() => navigate("/academic-record/new")}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 flex items-center gap-2"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Add Academic Record
             </button>
             <button
               onClick={handleLogout}
@@ -252,8 +275,6 @@ export default function AdminDashboard() {
             <div className="py-12 text-center">
               <svg className="mx-auto h-12 w-12 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5z" />
               </svg>
               <h3 className="mt-4 text-sm font-medium text-zinc-900">No students</h3>
               <p className="mt-1 text-sm text-zinc-500">
@@ -320,8 +341,22 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3">
                           <div className="flex gap-1">
                             <button
-                              onClick={() => navigate(`/student/${student.id}/edit`)}
+                              onClick={() => handleViewRecords(student)}
+                              className="rounded border border-green-300 bg-green-50 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100"
+                              title="View Academic Records"
+                            >
+                              Records
+                            </button>
+                            <button
+                              onClick={() => navigate(`/academic-record/new/${student.id}`)}
                               className="rounded border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                              title="Add Academic Record"
+                            >
+                              Add
+                            </button>
+                            <button
+                              onClick={() => navigate(`/student/${student.id}/edit`)}
+                              className="rounded border border-yellow-300 bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700 hover:bg-yellow-100"
                             >
                               Edit
                             </button>
@@ -341,6 +376,90 @@ export default function AdminDashboard() {
             </div>
           )}
         </Section>
+
+        {/* Academic Records Modal */}
+        {selectedStudentRecords && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              <div className="p-6 border-b border-zinc-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-zinc-900">Academic Records</h2>
+                    <p className="text-sm text-zinc-600 mt-1">
+                      {selectedStudentRecords.student.first_name} {selectedStudentRecords.student.last_name} 
+                      ({selectedStudentRecords.student.matriculation_number})
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedStudentRecords(null)}
+                    className="text-zinc-400 hover:text-zinc-600"
+                  >
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                {loadingRecords ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-zinc-300 border-t-zinc-900"></div>
+                    <p className="mt-3 text-zinc-600">Loading records...</p>
+                  </div>
+                ) : selectedStudentRecords.records.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-zinc-600">No academic records found for this student.</p>
+                    <button
+                      onClick={() => {
+                        setSelectedStudentRecords(null);
+                        navigate(`/academic-record/new/${selectedStudentRecords.student.id}`);
+                      }}
+                      className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    >
+                      Add First Record
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {selectedStudentRecords.records.map((record) => (
+                      <div key={record.id} className="border border-zinc-200 rounded-lg p-4 hover:border-zinc-300">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-medium text-zinc-900">{record.course_name}</h3>
+                            <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-zinc-500">Level:</span>
+                                <span className="ml-2 font-medium">{record.level}</span>
+                              </div>
+                              <div>
+                                <span className="text-zinc-500">Semester:</span>
+                                <span className="ml-2 font-medium">{record.semester}</span>
+                              </div>
+                              <div>
+                                <span className="text-zinc-500">Grade:</span>
+                                <span className={`ml-2 font-medium ${
+                                  record.grade === 'A' ? 'text-green-600' :
+                                  record.grade === 'B' ? 'text-blue-600' :
+                                  record.grade === 'C' ? 'text-yellow-600' :
+                                  record.grade === 'F' ? 'text-red-600' : 'text-zinc-900'
+                                }`}>{record.grade}</span>
+                              </div>
+                              <div>
+                                <span className="text-zinc-500">CGPA:</span>
+                                <span className="ml-2 font-medium">{record.cgpa.toFixed(2)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Connection Status */}
         <div className="rounded-lg border border-zinc-200 bg-white p-4">

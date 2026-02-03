@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Student, AcademicRecord
 from .serializer import StudentSerializer, AcademicRecordSerializer
+from django.db import models
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()

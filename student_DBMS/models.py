@@ -20,7 +20,7 @@ class Student(models.Model):
     nationality = models.CharField(max_length=50)
     address = models.TextField()
     enrollment_date = models.DateField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)  # Fixed: auto_now_add for creation
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -60,8 +60,8 @@ class AcademicRecord(models.Model):
     grade = models.CharField(max_length=1, choices=GRADE_CHOICES)
     semester = models.CharField(max_length=10, choices=SEMESTER_CHOICES)
     level = models.IntegerField(choices=LEVEL_CHOICES)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    created_at = models.DateTimeField(auto_now_add=True)  # Fixed: auto_now_add for creation
+    updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"{self.course_name} - {self.get_grade_display()} (Level {self.level}, {self.get_semester_display()})"
 

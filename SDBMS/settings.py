@@ -56,10 +56,12 @@ MIDDLEWARE = [
 
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Vite default
-    "http://localhost:3000",  # Create React App default
-    "http://127.0.0.1:5173",  # Vite alternative
-    "http://127.0.0.1:3000",  # CRA alternative
+    "http://localhost:5173",  # ✅ Vite default
+    "http://localhost:8000",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",  # ✅ Vite alternative
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:3000",
 ]
 
 # For development only (allows all origins)
@@ -93,6 +95,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
     ],
+    'DEFAULT_PAGINATION_CLASS': None,
 }
 
 ROOT_URLCONF = 'SDBMS.urls'
