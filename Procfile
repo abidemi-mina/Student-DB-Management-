@@ -1,0 +1,1 @@
+web: gunicorn SDBMS.wsgi --log-file -
